@@ -1467,6 +1467,57 @@ function exportDiagram(event, args, directFinalize)
 
 ipcMain.on('export', exportDiagram);
 
+//==== Handle SST-specific saveDataToFile event ====
+ipcMain.on('saveDataToFile', (event, args) => {
+
+	let [folder, filename, format, data, mime, base64Encoded] = args;
+	if (__DEV__) {
+		console.log(`ENTRY on saveDataToFile event=${event} folder=${folder} filename=${filename}`);
+	}
+	let hasFolderAccess = true;
+	if (!fs.existsSync(folder))
+	{
+		try
+		{
+			fs.mkdirSync(folder);
+		}
+		catch (e)
+		{
+			hasFolderAccess = false;
+		}
+	}
+	if (hasFolderAccess)
+	{
+		let path = folder + '/' + filename;
+		let fileObject = new Object();
+		fileObject.path = path;
+		fileObject.name = path.replace(/^.*[\\\/]/, '');
+		fileObject.type = (base64Encoded) ? 'base64' : 'utf-8';
+		if (__DEV__)
+		{
+			console.log(`Saving file=${path}`);
+		}
+		try
+		{
+			fs.writeFileSync(fileObject.path, data, fileObject.type);
+		}
+		catch (e)
+		{
+			console.error(e);
+			let msg = `Error writing file ${path}`;
+			console.error(msg);
+			throw new Error(msg);
+		}
+	}
+	else
+	{
+		let msg = `Cannot create folder=${folder}`;
+		console.error(msg);
+		throw new Error(msg);
+	}
+})
+
+
 //================================================================
 // Renderer Helper functions
 //================================================================
